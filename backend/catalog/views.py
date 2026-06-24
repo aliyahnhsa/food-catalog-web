@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, parsers
 from .models import MenuItem
 from .serializers import MenuItemSerializer, UserRegisterSerializer
 from rest_framework.views import APIView
@@ -19,6 +19,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     queryset = MenuItem.objects.all().order_by('-created_at')
     serializer_class = MenuItemSerializer
     permission_classes = [IsAdminOrReadOnly]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description', 'category']
 

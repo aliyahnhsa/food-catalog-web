@@ -25,6 +25,10 @@ function Dashboard() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
 
+  const [menus, setMenus] = useState([]);
+  const [loadingMenus, setLoadingMenus] = useState(false);
+  const [editingMenuId, setEditingMenuId] = useState(null);
+
   const [imagePreview, setImagePreview] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -40,6 +44,7 @@ function Dashboard() {
         }
 
         setCheckingAccess(false);
+        await loadMenus();
       } catch (err) {
         navigate("/login");
       }
@@ -47,6 +52,18 @@ function Dashboard() {
 
     checkAdmin();
   }, [navigate]);
+
+  const loadMenus = async () => {
+    setLoadingMenus(true);
+    try {
+      const res = await API.get("/menus/");
+      setMenus(res.data);
+    } catch (error) {
+      console.log("Failed to load menus", error);
+    } finally {
+      setLoadingMenus(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -141,6 +158,7 @@ function Dashboard() {
   const resetForm = () => {
     setForm(initialForm);
     setErrors({});
+    setEditingMenuId(null);
     setFileInputKey((prev) => prev + 1);
 
     if (imagePreview) URL.revokeObjectURL(imagePreview);
@@ -148,6 +166,49 @@ function Dashboard() {
 
     setImagePreview(null);
     setVideoPreview(null);
+  };
+
+  const handleEdit = (menu) => {
+    setEditingMenuId(menu.id);
+    setForm({
+      name: menu.name || "",
+      description: menu.description || "",
+      category: menu.category || "main_course",
+      price: menu.price || "",
+      prep_time_minutes: menu.prep_time_minutes || "",
+      difficulty: menu.difficulty || "easy",
+      is_halal: menu.is_halal,
+      is_spicy: menu.is_spicy,
+      available_date: menu.available_date || "",
+      image: null,
+      video: null,
+    });
+    setFileInputKey((prev) => prev + 1);
+
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+
+    setImagePreview(menu.image ? (menu.image.startsWith("http") ? menu.image : `http://127.0.0.1:8000${menu.image}`) : null);
+    setVideoPreview(menu.video ? (menu.video.startsWith("http") ? menu.video : `http://127.0.0.1:8000${menu.video}`) : null);
+    setSuccessMessage("");
+    setErrors({});
+  };
+
+  const handleDelete = async (menuId) => {
+    const confirmed = window.confirm("Delete this menu item? This cannot be undone.");
+    if (!confirmed) return;
+
+    try {
+      await API.delete(`/menus/${menuId}/`);
+      setSuccessMessage("Menu has been deleted successfully.");
+      setMenus((prev) => prev.filter((menu) => menu.id !== menuId));
+      if (editingMenuId === menuId) {
+        resetForm();
+      }
+    } catch (error) {
+      console.log(error);
+      setErrors({ form: "Unable to delete menu right now." });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -173,14 +234,24 @@ function Dashboard() {
     });
 
     try {
-      await API.post("/menus/", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      if (editingMenuId) {
+        await API.put(`/menus/${editingMenuId}/`, data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        setSuccessMessage("Menu has been updated successfully.");
+      } else {
+        await API.post("/menus/", data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        setSuccessMessage("Menu has been added successfully.");
+      }
 
+      await loadMenus();
       resetForm();
-      setSuccessMessage("Menu has been added successfully.");
     } catch (error) {
       console.log(error);
 
@@ -566,17 +637,32 @@ function Dashboard() {
               </ul>
 
               <button type="submit" disabled={submitting}>
-                {submitting ? "Saving menu..." : "Save Menu"}
+                {submitting ? "Saving menu..." : editingMenuId ? "Update Menu" : "Save Menu"}
               </button>
 
-              <button
-                type="button"
-                className="btn-secondary reset-button"
-                onClick={resetForm}
-                disabled={submitting}
-              >
-                Clear Form
-              </button>
+              {editingMenuId && (
+                <button
+                  type="button"
+                  className="btn-secondary reset-button"
+                  onClick={resetForm}
+                  disabled={submitting}
+                  style={{marginTop:12}}
+                >
+                  Cancel edit
+                </button>
+              )}
+
+              {!editingMenuId && (
+                <button
+                  type="button"
+                  className="btn-secondary reset-button"
+                  onClick={resetForm}
+                  disabled={submitting}
+                  style={{marginTop:12}}
+                >
+                  Clear Form
+                </button>
+              )}
 
               <p>
                 Fields marked with <strong>*</strong> are required.
@@ -584,6 +670,59 @@ function Dashboard() {
             </div>
           </aside>
         </form>
+
+        <section className="card menu-list-section">
+          <div className="section-heading" style={{marginBottom:16}}>
+            <div>
+              <h2>Manage existing menus</h2>
+              <p>Update or delete menu items that are already published.</p>
+            </div>
+          </div>
+
+          {loadingMenus ? (
+            <div className="empty-state">Loading menus...</div>
+          ) : menus.length === 0 ? (
+            <div className="empty-state">No menu items found yet.</div>
+          ) : (
+            <div className="menu-management-grid">
+              {menus.map((menu) => (
+                <div key={menu.id} className="card menu-card menu-item-card">
+                  <div className="menu-image-wrap">
+                    {menu.image ? (
+                      <img
+                        src={menu.image.startsWith("http") ? menu.image : `http://127.0.0.1:8000${menu.image}`}
+                        alt={menu.name}
+                      />
+                    ) : (
+                      <div className="menu-image-placeholder">
+                        <span>{menu.category?.replace("_", " ") || "Menu"}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="menu-content">
+                    <div className="menu-meta">
+                      <span className="badge">{menu.category?.replace("_", " ")}</span>
+                      <span className="price">Rp{menu.price}</span>
+                    </div>
+
+                    <h2>{menu.name}</h2>
+                    <p>{menu.description}</p>
+
+                    <div className="menu-item-actions" style={{ marginTop: 18 }}>
+                      <button type="button" className="btn-secondary" onClick={() => handleEdit(menu)}>
+                        Edit
+                      </button>
+                      <button type="button" onClick={() => handleDelete(menu.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );
