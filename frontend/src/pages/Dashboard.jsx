@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
+import { BACKEND_URL } from "../api";
 
 const initialForm = {
   name: "",
@@ -188,8 +189,8 @@ function Dashboard() {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     if (videoPreview) URL.revokeObjectURL(videoPreview);
 
-    setImagePreview(menu.image ? (menu.image.startsWith("http") ? menu.image : `http://127.0.0.1:8000${menu.image}`) : null);
-    setVideoPreview(menu.video ? (menu.video.startsWith("http") ? menu.video : `http://127.0.0.1:8000${menu.video}`) : null);
+    setImagePreview(menu.image ? (menu.image.startsWith("http") ? menu.image : `${BACKEND_URL}${menu.image}`) : null);
+    setVideoPreview(menu.video ? (menu.video.startsWith("http") ? menu.video : `${BACKEND_URL}${menu.video}`) : null);
     setSuccessMessage("");
     setErrors({});
   };
@@ -690,7 +691,7 @@ function Dashboard() {
                   <div className="menu-image-wrap">
                     {menu.image ? (
                       <img
-                        src={menu.image.startsWith("http") ? menu.image : `http://127.0.0.1:8000${menu.image}`}
+                        src={menu.image.startsWith("http") ? menu.image : `${BACKEND_URL}${menu.image}`}
                         alt={menu.name}
                       />
                     ) : (

@@ -1,7 +1,10 @@
 import axios from "axios";
 
+export const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
+
 const API = axios.create({
-  baseURL: "http://127.0.0.1:8000/api",
+  baseURL: `${BACKEND_URL}/api`,
 });
 
 API.interceptors.request.use((config) => {

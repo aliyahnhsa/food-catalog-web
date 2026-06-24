@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import { BACKEND_URL } from "../api";
 
 export default function MenuCard({ menu }) {
   const imageUrl =
     menu.image &&
     (menu.image.startsWith("http")
       ? menu.image
-      : `http://127.0.0.1:8000${menu.image}`);
+      : `${BACKEND_URL}${menu.image}`);
 
   return (
     <Link to={`/menus/${menu.id}`} className="card menu-card">

@@ -31,13 +31,13 @@ function MenuDetail() {
     menu.image &&
     (menu.image.startsWith("http")
       ? menu.image
-      : `http://127.0.0.1:8000${menu.image}`);
+      : `${BACKEND_URL}${menu.image}`);
 
   const videoUrl =
     menu.video &&
     (menu.video.startsWith("http")
       ? menu.video
-      : `http://127.0.0.1:8000${menu.video}`);
+      : `${BACKEND_URL}${menu.video}`);
 
   return (
     <main>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../api";
 import MenuCard from "../components/MenuCard";
+import { BACKEND_URL } from "../api";
 
 function Home() {
   const [featuredMenus, setFeaturedMenus] = useState([]);
@@ -52,7 +53,7 @@ function Home() {
     mainMenu?.image &&
     (mainMenu.image.startsWith("http")
       ? mainMenu.image
-      : `http://127.0.0.1:8000${mainMenu.image}`);
+      : `${BACKEND_URL}${mainMenu.image}`);
 
   return (
     <main className="home-page">
